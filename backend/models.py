@@ -4,7 +4,7 @@ from flask_sqlalchemy import SQLAlchemy
 import json
 
 database_name = "frivia"
-database_path = f"postgres:///{database_name}"
+database_path = f"postgresql:///{database_name}"
 
 db = SQLAlchemy()
 
