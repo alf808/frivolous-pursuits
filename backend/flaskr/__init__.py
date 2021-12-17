@@ -4,7 +4,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 import random
 
-from models import setup_db, Question, Category
+from models import setup_db, Question, Category, db
 
 QUESTIONS_PER_PAGE = 10
 
@@ -32,20 +32,12 @@ def create_app(test_config=None):
   '''
   @app.after_request
   def after_request(response):
-    response.headers.add('Access-Control-Allow-Headers',
-                         'Content-Type, Authorization, true')
-    response.headers.add('Access-Control-Allow-Methods',
-                         'GET, POST, PUT, PATCH, DELETE, OPTIONS')
+    response.headers.add(
+      'Access-Control-Allow-Headers', 'Content-Type, Authorization,true')
+    response.headers.add(
+      'Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS')
     return response
 
-# TEST
-  @app.route('/')
-  def hello():
-    return jsonify({
-      'success': True,
-      'message': 'hello'
-      })
-  
   '''
   @TODO: 
   Create an endpoint to handle GET requests 
@@ -83,6 +75,8 @@ def create_app(test_config=None):
 
     if len(current_questions) == 0:
       abort(404)
+    if len(categories) == 0:
+      abort(404)
       
     return jsonify({
       'success': True,
@@ -97,7 +91,26 @@ def create_app(test_config=None):
   TEST: When you click the trash icon next to a question, the question will be removed.
   This removal will persist in the database and when you refresh the page. 
   '''
-
+  @app.route('/questions/<int:question_id>')
+  def delete_question(question_id):
+    question = Question.query.get(question_id)
+    if question is None:
+      abort(404)
+      
+    try:
+      # question.delete()
+      pass
+    except:
+      db.session.rollback()
+      abort(422)
+    else:
+      return jsonify({
+        'success': True,
+        'deleted': question_id
+        })
+    finally:
+      db.session.close()
+      
   '''
   @TODO: 
   Create an endpoint to POST a new question, 
@@ -108,7 +121,45 @@ def create_app(test_config=None):
   the form will clear and the question will appear at the end of the last page
   of the questions list in the "List" tab.  
   '''
+  @app.route('/questions', methods=['POST'])
+  def create_question():
+    body = request.get_json()
+    new_question = body.get('question', None)
+    new_answer = body.get('answer', None)
+    new_category = body.get('category', None)
+    new_difficulty = body.get('difficulty', None)
+    try:
+      question = Question(
+        question = new_question,
+        answer = new_answer,
+        category = new_category,
+        difficulty = new_difficulty
+        )
+      # question.insert()
+    except:
+      db.session.rollback()
+      abort(422)
+    else:
+      return jsonify({
+        'success': True,
+        'created': question.question,
+        'total_questions': len(Question.query.all())
+        })
+    finally:
+      db.session.close()
 
+  # Based on frontend, there is a search endpoint
+  @app.route('/questions/search', methods=['POST'])
+  def search_questions():
+    body = request.get_json()
+    search_term = body.get('searchTerm', None)
+    data = Question.query.filter(Question.question.ilike(f"%{search_term}%")).all()
+    current_questions = paginate_questions(request, data)
+    return jsonify ({
+      'success': True,
+      'questions': current_questions,
+      'total_questions': len(data)
+      })
   '''
   @TODO: 
   Create a POST endpoint to get questions based on a search term. 
