@@ -27,17 +27,35 @@ def create_app(test_config=None):
     response.headers.add('Access-Control-Allow-Methods',
                          'GET, POST, PUT, PATCH, DELETE, OPTIONS')
     return response
-  '''
-  @TODO: 
-  Create an endpoint to handle GET requests 
-  for all available categories.
-  '''
+
+# TEST
   @app.route('/')
   def hello():
     return jsonify({
       'success': True,
       'message': 'hello'
       })
+  
+  '''
+  @TODO: 
+  Create an endpoint to handle GET requests 
+  for all available categories.
+  '''
+  @app.route('/categories')
+  def get_categories():
+    categories = Category.query.all()
+    res = {}
+    for category in categories:
+      res[category.id] = category.type
+
+    if len(res) == 0:
+      abort(404)
+
+    return jsonify({
+      'success': True,
+      'categories': res
+      })
+
   '''
   @TODO: 
   Create an endpoint to handle GET requests for questions, 
