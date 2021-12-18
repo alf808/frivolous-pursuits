@@ -49,7 +49,7 @@ class FriviaTestCase(unittest.TestCase):
         self.assertTrue(data['total_questions'])
         self.assertTrue(len(data['questions']))
 
-    def test_404_sent_requesting_beyond_valid_page(self):
+    def test_404_requesting_beyond_valid_page(self):
         pass
     def test_get_question_search_with_results(self):
         pass
@@ -57,8 +57,12 @@ class FriviaTestCase(unittest.TestCase):
         pass
     def test_get_categories(self):
         pass
-    def test_get_categories_non_exist(self):
-        pass
+    def test_get_categories_method_not_allowed(self):
+        res = self.client().post('/categories')
+        data = json.loads(res.data)
+        self.assertEqual(res.status_code, 405)
+        self.assertEqual(data['success'], False)
+
     def test_get_questions_by_category(self):
         pass
     def test_404_get_questions_by_category(self):
