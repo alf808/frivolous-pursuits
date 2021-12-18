@@ -188,7 +188,7 @@ def create_app(test_config=None):
   categories in the left column will cause only questions of that 
   category to be shown. 
   '''
-  @app.route('/categories/<int:category_id>/questions', methods=['GET'])
+  @app.route('/categories/<int:category_id>/questions')
   def get_questions_by_category(category_id):
       query = Question.query.filter(Question.category==category_id).all()
       current_questions = paginate_questions(request, query)
@@ -213,7 +213,36 @@ def create_app(test_config=None):
   one question at a time is displayed, the user is allowed to answer
   and shown whether they were correct or not. 
   '''
+  @app.route('/quizzes', methods=['POST'])
+  def get_quizzes():
+      body = request.get_json()
+      previous_questions = body.get('previous_questions', None)
+      quiz_category = body.get('quiz_category', None)
+      category_id = int(quiz_category['id'])
 
+      try:
+          if not any(body.values()):  # check if any falsy values
+              raise ValueError('type not right')
+              # abort(404)
+
+          if category_id == 0:
+              query = Question.query.all()
+          else:
+              query = Question.query.filter(Question.category==category_id).all()
+          if query:
+              question = random.choice(query)
+              json_obj = jsonify({
+                  'success': True,
+                  'question': question.format()
+              })
+          else:
+              abort(404)
+      except ValueError as ve:
+          abort(404, description=ve)
+      finally:
+          print(body)
+
+      return json_obj
   '''
   @TODO: 
   Create error handlers for all expected errors 
