@@ -39,7 +39,7 @@ def create_app(test_config=None):
     response.headers.add(
       'Access-Control-Allow-Headers', 'Content-Type, Authorization,true')
     response.headers.add(
-      'Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS')
+      'Access-Control-Allow-Methods', 'GET,POST,DELETE,OPTIONS')
     return response
 
   '''
@@ -148,7 +148,7 @@ def create_app(test_config=None):
         res = f'{question.question}, id: {question.id}'
         json_obj = jsonify({
             'success': True,
-            'created': question.id,
+            'created': res,
             'total_questions': len(Question.query.all())
         })
     finally:
@@ -190,6 +190,7 @@ def create_app(test_config=None):
   '''
   @app.route('/categories/<int:category_id>/questions')
   def get_questions_by_category(category_id):
+      category = Category.query.get(category_id)
       query = Question.query.filter(Question.category==category_id).all()
       current_questions = paginate_questions(request, query)
       if len(current_questions) == 0:
@@ -198,9 +199,8 @@ def create_app(test_config=None):
           'success': True,
           'questions': current_questions,
           'total_questions': len(query),
-          'current_category': category_id
+          'current_category': category.type
       })
-          
 
   '''
   @TODO: 
@@ -248,7 +248,28 @@ def create_app(test_config=None):
   Create error handlers for all expected errors 
   including 404 and 422. 
   '''
-  
+    @app.errorhandler(404)
+    def not_found(error):
+        return (
+            jsonify({"success": False, "error": 404, "message": "resource not found"}),
+            404,
+        )
+
+    @app.errorhandler(422)
+    def unprocessable(error):
+        return (
+            jsonify({"success": False, "error": 422, "message": "unprocessable"}),
+            422,
+        )
+
+    @app.errorhandler(400)
+    def bad_request(error):
+        return jsonify({"success": False, "error": 400, "message": "bad request"}), 400
+
+    @app.errorhandler(500)
+    def server_error(error):
+        return jsonify({"success": False,v"error": 500, "message": "Internal Server Error"}), 500
+    
   return app
 
     
