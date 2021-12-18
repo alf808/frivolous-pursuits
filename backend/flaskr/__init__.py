@@ -1,12 +1,16 @@
 import os
-from flask import Flask, request, abort, jsonify
+from flask import Flask, request, abort, jsonify, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 import random
 
 from models import setup_db, Question, Category, db
 
+CAT_IDS = range(1,7)
 QUESTIONS_PER_PAGE = 10
+
+class ValidationError(Exception):
+    pass
 
 def paginate_questions(request, selection):
     page = request.args.get('page', 1, type=int)
@@ -75,15 +79,14 @@ def create_app(test_config=None):
 
     if len(current_questions) == 0:
       abort(404)
-    if len(categories) == 0:
-      abort(404)
       
     return jsonify({
-      'success': True,
-      'questions': current_questions,
-      'total_questions': len(query),
-      'categories': {cat.id:cat.type for cat in categories}
-      })
+        'success': True,
+        'questions': current_questions,
+        'total_questions': len(query),
+        'current_category': 'ALL',
+        'categories': {cat.id:cat.type for cat in categories}
+    })
   '''
   @TODO: 
   Create an endpoint to DELETE question using a question ID. 
@@ -91,15 +94,14 @@ def create_app(test_config=None):
   TEST: When you click the trash icon next to a question, the question will be removed.
   This removal will persist in the database and when you refresh the page. 
   '''
-  @app.route('/questions/<int:question_id>')
+  @app.route('/questions/<int:question_id>', methods=['DELETE'])
   def delete_question(question_id):
     question = Question.query.get(question_id)
     if question is None:
       abort(404)
       
     try:
-      # question.delete()
-      pass
+      question.delete()
     except:
       db.session.rollback()
       abort(422)
@@ -124,42 +126,35 @@ def create_app(test_config=None):
   @app.route('/questions', methods=['POST'])
   def create_question():
     body = request.get_json()
-    new_question = body.get('question', None)
-    new_answer = body.get('answer', None)
-    new_category = body.get('category', None)
-    new_difficulty = body.get('difficulty', None)
+    question = body.get('question', None)
+    answer = body.get('answer', None)
+    category = int(body.get('category', None))
+    difficulty = int(body.get('difficulty', None))
     try:
-      question = Question(
-        question = new_question,
-        answer = new_answer,
-        category = new_category,
-        difficulty = new_difficulty
+        if not all(body.values()) or category not in range(1,7) or difficulty not in range(1,6):
+            raise ValidationError('question: not-empty string, answer: not-empty string, category: 1-6, difficulty: 1-5')
+
+        question = Question(
+            question = question,
+            answer = answer,
+            category = category,
+            difficulty = difficulty
         )
-      # question.insert()
-    except:
-      db.session.rollback()
-      abort(422)
+        question.insert()
+    except ValidationError as ve:
+        db.session.rollback()
+        abort(422, description=f'Correction needed. {ve}')
     else:
-      return jsonify({
-        'success': True,
-        'created': question.question,
-        'total_questions': len(Question.query.all())
+        res = f'{question.question}, id: {question.id}'
+        json_obj = jsonify({
+            'success': True,
+            'created': question.id,
+            'total_questions': len(Question.query.all())
         })
     finally:
-      db.session.close()
-
-  # Based on frontend, there is a search endpoint
-  @app.route('/questions/search', methods=['POST'])
-  def search_questions():
-    body = request.get_json()
-    search_term = body.get('searchTerm', None)
-    data = Question.query.filter(Question.question.ilike(f"%{search_term}%")).all()
-    current_questions = paginate_questions(request, data)
-    return jsonify ({
-      'success': True,
-      'questions': current_questions,
-      'total_questions': len(data)
-      })
+        db.session.close()
+        print(body)
+    return json_obj
   '''
   @TODO: 
   Create a POST endpoint to get questions based on a search term. 
@@ -170,7 +165,21 @@ def create_app(test_config=None):
   only question that include that string within their question. 
   Try using the word "title" to start. 
   '''
-
+  @app.route('/questions/search', methods=['POST'])
+  def search_questions():
+    body = request.get_json()
+    search_term = body.get('searchTerm', None)
+    data = Question.query.filter(Question.question.ilike(f"%{search_term}%")).all()
+    current_questions = paginate_questions(request, data)
+    if data:
+        return jsonify({
+            'success': True,
+            'questions': current_questions,
+            'total_questions': len(data),
+            'current_category': 'ALL'
+          })
+    else:
+        abort(404)
   '''
   @TODO: 
   Create a GET endpoint to get questions based on category. 

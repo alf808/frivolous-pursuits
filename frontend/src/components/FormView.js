@@ -49,6 +49,8 @@ class FormView extends Component {
       },
       crossDomain: true,
       success: (result) => {
+	alert('Question successfully submitted. Check LIST to see new question on last page')
+	window.location.reload(false);
         document.getElementById("add-question-form").reset();
         return;
       },
