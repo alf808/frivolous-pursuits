@@ -78,11 +78,12 @@ The API will return five error types when requests fail:
 - 422: unprocessable
 - 500: Internal Server Error
 
-### Endpoints
+### Endpoints: sample CURL commands are provided for the more difficult requests
 
 #### GET /categories
 - Fetches a dictionary of categories in which the keys are the ids and the value is the corresponding string of the category
 - Request Arguments: None
+- `curl http://127.0.0.1:5000/categories`
 - Returns: An object with a single key, categories, that contains an object of id: category_string key:value pairs.
 ```
 {
@@ -144,6 +145,7 @@ The API will return five error types when requests fail:
 #### DELETE '/questions/${id}'
 - Deletes a specified question using the id of the question
 - Request Arguments: id - integer
+- `curl -X DELETE http://127.0.0.1:5000/questions/99`
 - Returns: The id of the question.
 
 #### POST '/quizzes'
@@ -169,6 +171,7 @@ The API will return five error types when requests fail:
 
 #### POST '/questions'
 - Sends a post request in order to add a new question
+- `curl http://127.0.0.1:5000/questions -X POST -H "Content-Type: application/json" -d '{"question":"What is my name", "answer":"alf", "difficulty":"5", "category":"3"}'`
 - Request Body:
 ```
 {
