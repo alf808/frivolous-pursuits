@@ -56,7 +56,7 @@ def create_app(test_config=None):
         })
 
     '''
-    Endpoint to handle GET requests for questions w/ pagination (10 items).
+    Endpoint to handle GET requests for questions w/ pagination (10 items)
     This endpoint returns a list of questions,
     number of total questions, current category, categories.
     '''
@@ -76,18 +76,18 @@ def create_app(test_config=None):
             'current_category': 'ALL',
             'categories': {cat.id:cat.type for cat in categories}
         })
-    
+
     '''
     Endpoint to DELETE question using a question ID.
     '''
     @app.route('/questions/<int:question_id>', methods=['DELETE'])
     def delete_question(question_id):
-        question = Question.query.get(question_id)
-        if not question:
+        query = Question.query.get(question_id)
+        if not query:
             abort(422)
 
         try:
-            question.delete()
+            query.delete()
         except:
             db.session.rollback()
             abort(422)
@@ -98,9 +98,9 @@ def create_app(test_config=None):
                 })
         finally:
             db.session.close()
-        
+
         return res_obj
-    
+
     '''
     Endpoint to POST a new question w/ question and answer text,
     category integer, and difficulty level integer.
@@ -113,8 +113,9 @@ def create_app(test_config=None):
         try:
             category = int(body.get('category', None))
             difficulty = int(body.get('difficulty', None))
-            if not all(body.values()) or category not in range(1,7) or difficulty not in range(1,6):
-                raise ValidationError('question: not-empty string, answer: not-empty string, category: 1-6, difficulty: 1-5')
+            if (not all(body.values()) or
+                category not in range(1,7) or difficulty not in range(1,6)):
+                raise ValidationError('question/answer: text, cat/diff: int')
 
             question = Question(
                 question = question,
@@ -136,9 +137,9 @@ def create_app(test_config=None):
         finally:
             db.session.close()
             print(body)
-            
+
         return json_obj
-    
+
     '''
     POST endpoint to get questions based on a search term.
     '''
@@ -146,18 +147,19 @@ def create_app(test_config=None):
     def search_questions():
         body = request.get_json()
         search_term = body.get('searchTerm', None)
-        data = Question.query.filter(Question.question.ilike(f"%{search_term}%")).all()
-        current_questions = paginate_questions(request, data)
-        if not data:
+        query = Question.query.filter(
+            Question.question.ilike(f"%{search_term}%")).all()
+        current_questions = paginate_questions(request, query)
+        if not query:
             abort(404)
 
         return jsonify({
             'success': True,
             'questions': current_questions,
-            'total_questions': len(data),
+            'total_questions': len(query),
             'current_category': 'ALL'
         })
-            
+
     '''
     GET endpoint to get questions based on category.
     '''
@@ -188,13 +190,13 @@ def create_app(test_config=None):
         quiz_category = body.get('quiz_category', None)
 
         try:
-            category_id = int(quiz_category['id'])
+            cat_id = int(quiz_category['id'])
             if not any(body.values()):  # check if any falsy values
-                raise ValidationError('previous_questions: list, quiz_category: dict')
-            if category_id == 0:
+                raise ValidationError('prev_questions:[], quiz_category:{}')
+            if cat_id == 0:
                 query = Question.query.all()
             else:
-                query = Question.query.filter(Question.category==category_id).all()
+                query = Question.query.filter(Question.category==cat_id).all()
             if query:
                 question = random.choice(query)
                 json_obj = jsonify({
@@ -215,22 +217,37 @@ def create_app(test_config=None):
     '''
     @app.errorhandler(404)
     def not_found(error):
-        return jsonify({'success': False, 'error': 404, 'message': 'resource not found'}), 404
+        return jsonify({
+            'success': False,
+            'error': 404,
+            'message': 'resource not found'}), 404
 
     @app.errorhandler(422)
     def unprocessable(error):
-        return jsonify({'success': False, 'error': 422, 'message': 'unprocessable'}), 422
+        return jsonify({
+            'success': False,
+            'error': 422,
+            'message': 'unprocessable'}), 422
 
     @app.errorhandler(400)
     def bad_request(error):
-        return jsonify({'success': False, 'error': 400, 'message': 'bad request'}), 400
+        return jsonify({
+            'success': False,
+            'error': 400,
+            'message': 'bad request'}), 400
 
     @app.errorhandler(405)
     def method_not_allowed(error):
-        return jsonify({'success': False, 'error': 405, 'message': 'method not allowed'}), 405
-    
+        return jsonify({
+            'success': False,
+            'error': 405,
+            'message': 'method not allowed'}), 405
+
     @app.errorhandler(500)
     def server_error(error):
-        return jsonify({'success': False, 'error': 500, 'message': 'Internal Server Error'}), 500
+        return jsonify({
+            'success': False,
+            'error': 500,
+            'message': 'Internal Server Error'}), 500
 
     return app

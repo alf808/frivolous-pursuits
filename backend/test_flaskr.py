@@ -38,7 +38,8 @@ class FriviaTestCase(unittest.TestCase):
 
     """
     TODO
-    Write at least one test for each test for successful operation and for expected errors.
+    Write at least one test for each test for successful operation
+    and for expected errors.
     """
     def test_get_paginated_questions(self):
         res = self.client().get('/questions')
@@ -56,7 +57,7 @@ class FriviaTestCase(unittest.TestCase):
         self.assertEqual(res.status_code, 404)
         self.assertEqual(data['success'], False)
         self.assertEqual(data['message'], 'resource not found')
-        
+
     def test_get_question_search_with_results(self):
         search = {'searchTerm': 'title'}
         res = self.client().post('/questions/search', json=search)
@@ -86,7 +87,7 @@ class FriviaTestCase(unittest.TestCase):
     def test_get_categories_method_not_allowed(self):
         res = self.client().post('/categories')
         data = json.loads(res.data)
-        
+
         self.assertEqual(res.status_code, 405)
         self.assertEqual(data['success'], False)
         self.assertEqual(data['message'], 'method not allowed')
@@ -110,10 +111,10 @@ class FriviaTestCase(unittest.TestCase):
     def test_create_question(self):
         res = self.client().post('/questions', json=self.new_question)
         data = json.loads(res.data)
-        
+
         self.assertEqual(res.status_code, 200)
         self.assertEqual(data['success'], True)
-        
+
     def test_422_if_question_creation_fails(self):
         res = self.client().post('/questions', json={})
         data = json.loads(res.data)
