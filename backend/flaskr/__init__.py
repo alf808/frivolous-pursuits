@@ -28,13 +28,10 @@ def create_app(test_config=None):
     app = Flask(__name__)
     setup_db(app)
 
-    '''
-    Set up CORS. Allow '*' for origins
-    '''
+    # Set up CORS. Allow '*' for origins
     CORS(app, resources={'/': {'origins': '*'}})
-    '''
-    after_request decorator to set Access-Control-Allow
-    '''
+
+    # after_request decorator to set Access-Control-Allow
     @app.after_request
     def after_request(response):
         response.headers.add(
@@ -53,7 +50,7 @@ def create_app(test_config=None):
         categories = Category.query.all()
 
         if len(categories) == 0:
-        abort(404)
+            abort(404)
 
         return jsonify({
         'success': True,
@@ -79,7 +76,7 @@ def create_app(test_config=None):
         current_questions = paginate_questions(request, query)
 
         if len(current_questions) == 0:
-        abort(404)
+            abort(404)
 
         return jsonify({
             'success': True,
@@ -99,21 +96,22 @@ def create_app(test_config=None):
     def delete_question(question_id):
         question = Question.query.get(question_id)
         if question is None:
-        abort(404)
+            abort(404)
 
         try:
-        question.delete()
+            question.delete()
         except:
-        db.session.rollback()
-        abort(422)
+            db.session.rollback()
+            abort(422)
         else:
-        return jsonify({
-            'success': True,
-            'deleted': question_id
-            })
+            res_obj = jsonify({
+                'success': True,
+                'deleted': question_id
+                })
         finally:
-        db.session.close()
-
+            db.session.close()
+        
+        return res_obj
     '''
     @TODO:
     Create an endpoint to POST a new question,
@@ -223,9 +221,7 @@ def create_app(test_config=None):
 
         try:
             if not any(body.values()):  # check if any falsy values
-                raise ValueError('type not right')
-                # abort(404)
-
+                raise ValidationError('previous_questions: list, quiz_category: dict')
             if category_id == 0:
                 query = Question.query.all()
             else:
@@ -237,9 +233,9 @@ def create_app(test_config=None):
                     'question': question.format()
                 })
             else:
-                abort(404)
-        except ValueError as ve:
-            abort(404, description=ve)
+                abort(400)
+        except ValidationError as ve:
+            abort(400, description=ve)
         finally:
             print(body)
 
@@ -251,17 +247,11 @@ def create_app(test_config=None):
     '''
     @app.errorhandler(404)
     def not_found(error):
-        return (
-            jsonify({"success": False, "error": 404, "message": "resource not found"}),
-            404,
-        )
+        return jsonify({"success": False, "error": 404, "message": "resource not found"}), 404
 
     @app.errorhandler(422)
     def unprocessable(error):
-        return (
-            jsonify({"success": False, "error": 422, "message": "unprocessable"}),
-            422,
-        )
+        return jsonify({"success": False, "error": 422, "message": "unprocessable"}), 422
 
     @app.errorhandler(400)
     def bad_request(error):
