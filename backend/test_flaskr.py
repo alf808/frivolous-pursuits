@@ -50,13 +50,39 @@ class FriviaTestCase(unittest.TestCase):
         self.assertTrue(len(data['questions']))
 
     def test_404_requesting_beyond_valid_page(self):
-        pass
+        res = self.client().get('/questions?page=1000')
+        data = json.loads(res.data)
+
+        self.assertEqual(res.status_code, 404)
+        self.assertEqual(data['success'], False)
+        self.assertEqual(data['message'], 'Resource Not Found')
+        
     def test_get_question_search_with_results(self):
-        pass
+        search = {'searchTerm': 'title'}
+        res = self.client().post('/questions', json=search)
+        data = json.loads(res.data)
+
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue(data['questions'])
+        self.assertEqual(len(data['questions']), 10)
+
     def test_get_question_search_without_results(self):
-        pass
+        search = {'searchTerm': 'tewada'}
+        res = self.client().post('/search', json=search)
+        data = json.loads(res.data)
+        self.assertEqual(res.status_code, 404)
+        self.assertEqual(data['success'], False)
+        self.assertEqual(data['message'], 'Page not found')
+
     def test_get_categories(self):
-        pass
+        res = self.client().get('/categories')
+        data = json.loads(res.data)
+
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(data['success'], True)
+        self.assertTrue(data['categories'])
+        self.assertTrue(len(data['categories']))
+
     def test_get_categories_method_not_allowed(self):
         res = self.client().post('/categories')
         data = json.loads(res.data)
@@ -64,9 +90,21 @@ class FriviaTestCase(unittest.TestCase):
         self.assertEqual(data['success'], False)
 
     def test_get_questions_by_category(self):
-        pass
-    def test_404_get_questions_by_category(self):
-        pass
+        res = self.client().get('categories/1/questions')
+        data = json.loads(res.data)
+
+        self.assertEqual(data['success'], True)
+        self.assertTrue(data['questions'])
+        self.assertTrue(data['categories'])
+
+    def test_404_get_questions_no_category(self):
+        res = self.client().get('categories/9999/questions')
+        data = json.loads(res.data)
+
+        self.assertEqual(res.status_code, 404)
+        self.assertEqual(data['success'], False)
+        self.assertEqual(data['message'], 'Resource Not Found')
+
     def test_create_question(self):
         pass
     def test_422_if_book_creation_fails(self):
