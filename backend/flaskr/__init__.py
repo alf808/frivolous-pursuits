@@ -95,8 +95,8 @@ def create_app(test_config=None):
     @app.route('/questions/<int:question_id>', methods=['DELETE'])
     def delete_question(question_id):
         question = Question.query.get(question_id)
-        if question is None:
-            abort(404)
+        if not question:
+            abort(422)
 
         try:
             question.delete()
@@ -127,9 +127,9 @@ def create_app(test_config=None):
         body = request.get_json()
         question = body.get('question', None)
         answer = body.get('answer', None)
-        category = int(body.get('category', None))
-        difficulty = int(body.get('difficulty', None))
         try:
+            category = int(body.get('category', None))
+            difficulty = int(body.get('difficulty', None))
             if not all(body.values()) or category not in range(1,7) or difficulty not in range(1,6):
                 raise ValidationError('question: not-empty string, answer: not-empty string, category: 1-6, difficulty: 1-5')
 
@@ -140,9 +140,9 @@ def create_app(test_config=None):
                 difficulty = difficulty
             )
             question.insert()
-        except ValidationError as ve:
+        except (ValidationError, TypeError) as e:
             db.session.rollback()
-            abort(422, description=f'Correction needed. {ve}')
+            abort(422, description=f'Correction needed. {e}')
         else:
             res = f'{question.question}, id: {question.id}'
             json_obj = jsonify({
@@ -217,9 +217,9 @@ def create_app(test_config=None):
         body = request.get_json()
         previous_questions = body.get('previous_questions', None)
         quiz_category = body.get('quiz_category', None)
-        category_id = int(quiz_category['id'])
 
         try:
+            category_id = int(quiz_category['id'])
             if not any(body.values()):  # check if any falsy values
                 raise ValidationError('previous_questions: list, quiz_category: dict')
             if category_id == 0:
@@ -234,8 +234,8 @@ def create_app(test_config=None):
                 })
             else:
                 abort(400)
-        except ValidationError as ve:
-            abort(400, description=ve)
+        except (ValidationError, TypeError) as e:
+            abort(400, description=e)
         finally:
             print(body)
 
@@ -247,18 +247,22 @@ def create_app(test_config=None):
     '''
     @app.errorhandler(404)
     def not_found(error):
-        return jsonify({"success": False, "error": 404, "message": "resource not found"}), 404
+        return jsonify({'success': False, 'error': 404, 'message': 'resource not found'}), 404
 
     @app.errorhandler(422)
     def unprocessable(error):
-        return jsonify({"success": False, "error": 422, "message": "unprocessable"}), 422
+        return jsonify({'success': False, 'error': 422, 'message': 'unprocessable'}), 422
 
     @app.errorhandler(400)
     def bad_request(error):
-        return jsonify({"success": False, "error": 400, "message": "bad request"}), 400
+        return jsonify({'success': False, 'error': 400, 'message': 'bad request'}), 400
 
+    @app.errorhandler(405)
+    def method_not_allowed(error):
+        return jsonify({'success': False, 'error': 405, 'message': 'method not allowed'}), 405
+    
     @app.errorhandler(500)
     def server_error(error):
-        return jsonify({"success": False,v"error": 500, "message": "Internal Server Error"}), 500
+        return jsonify({'success': False, 'error': 500, 'message': 'Internal Server Error'}), 500
 
     return app
